@@ -2,6 +2,7 @@ program xportfolio_opt
   use kind_mod         , only: dp
   use portfolio_opt_mod, only: max_sharpe_long_only, sort_desc, &
                                sharpe_ratio, sharpe_ratio_grad
+  use basic_stats_mod  , only: correl
   implicit none
 
   integer, parameter :: n = 1000       ! <-- change n here
@@ -13,8 +14,9 @@ program xportfolio_opt
   real(dp)           :: A(n,n)
   real(dp)           :: grad(n)        ! gradient of Sharpe ratio
   real(dp), parameter :: low = 0.01_dp, high = 0.10_dp
-  integer, parameter :: ntry_ran_w = 10**4
+  integer, parameter :: ntry_ran_w = 0 ! 10**4
   integer :: i
+  logical, parameter :: ran_cov = .false.
   ! initialize random-number generator
   call random_seed()
 
@@ -22,9 +24,16 @@ program xportfolio_opt
   mu = low + (high - low) * mu
   call sort_desc(mu)
 
-  ! simulate covariance = A^T * A
-  call random_number(A)
-  cov = matmul(transpose(A), A) / real(n, dp)
+  if (ran_cov) then
+     ! simulate covariance = A^T * A
+     call random_number(A)
+     cov = matmul(transpose(A), A) / real(n, dp)
+  else
+     cov = 0.0_dp
+     do i=1,n
+        cov(i,i) = 1.0_dp
+     end do 
+  end if
 
   ! perform long-only maximum-Sharpe optimization
   call max_sharpe_long_only(mu, cov, w, sharpe, n)
@@ -36,6 +45,7 @@ program xportfolio_opt
   call sharpe_ratio_grad(w, mu, cov, sharpe, grad)
   print "(/,a,/,*(f8.4))", "Gradient of Sharpe ratio:", grad
   print "(/,a,i0)", "#nonzero weights: ", count(w > 0.0_dp)
+  print*,"corr",correl(w, mu)
   w = 1.0_dp/n
   call sharpe_ratio_grad(w, mu, cov, sharpe, grad)
   print "(/,a, f8.4)", "Sharpe ratio for equal weights: ", sharpe
