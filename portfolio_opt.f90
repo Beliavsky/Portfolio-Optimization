@@ -8,11 +8,11 @@ contains
 !--------------------------------------------------------------------
 subroutine max_sharpe_long_only(mu, cov, w, sharpe, n, tol, max_iter)
 ! long-only portfolio that maximizes the ex-ante Sharpe ratio
+integer,  intent(in)  :: n               ! number of assets
 real(dp), intent(in)  :: mu(n)           ! expected returns
 real(dp), intent(in)  :: cov(n,n)        ! covariance matrix
 real(dp), intent(out) :: w(n)            ! optimal weights (∑w=1, w≥0)
 real(dp), intent(out) :: sharpe          ! optimal Sharpe ratio
-integer,  intent(in)  :: n               ! number of assets
 real(dp), intent(in),  optional :: tol   ! convergence tolerance
 integer,  intent(in),  optional :: max_iter ! maximum iterations
 
@@ -65,9 +65,9 @@ end subroutine max_sharpe_long_only
 
 subroutine project_simplex(v, n)
 ! projects vector v onto the probability simplex {x | x≥0, Σx=1}
-real(dp), intent(inout) :: v(n)
-integer,      intent(in)    :: n
-real(dp), allocatable   :: u(:)
+integer , intent(in)     :: n
+real(dp), intent(in out) :: v(n)
+real(dp), allocatable    :: u(:)
 real(dp) :: theta, cumsum
 integer :: k
 
