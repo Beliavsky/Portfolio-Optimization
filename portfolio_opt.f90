@@ -2,7 +2,7 @@ module portfolio_opt_mod
 use kind_mod, only: dp
 implicit none
 private
-public :: max_sharpe_long_only, sort_desc, sharpe_ratio
+public :: max_sharpe_long_only, sort_desc, sharpe_ratio, sharpe_ratio_grad
 
 contains
 
@@ -19,8 +19,8 @@ integer,  intent(in),  optional :: max_iter ! maximum iterations
 real(dp) :: tol_, ret, var, old_sharpe, alpha, alpha0
 integer      :: max_iter_, iter
 real(dp), allocatable :: g(:), cw(:), w_new(:)
-
-tol_      = 1.0e-8_dp           ! default tolerance
+real(kind=dp), parameter :: alpha_min = 1.0e-20_dp, sharpe_diff = 1.0e-20_dp
+tol_      = 1.0e-12_dp           ! default tolerance
 if (present(tol)) tol_ = tol
 max_iter_ = 10000                   ! default maximum iterations
 if (present(max_iter)) max_iter_ = max_iter
@@ -46,20 +46,21 @@ do iter = 1, max_iter_
 
    do                                  ! backtracking line search
       w_new = w + alpha * g
-      call project_simplex(w_new, n)    ! project to simplex (long‑only, fully‑invested)
+      call project_simplex(w_new, n)    ! project to simplex (long-only, fully-invested)
 
       cw  = matmul(cov, w_new)
       var = dot_product(w_new, cw)
       ret = dot_product(w_new, mu)
       sharpe = ret / sqrt(var)
 
-      if (sharpe > old_sharpe + 1.0e-12_dp .or. alpha < 1.0e-10_dp) exit
+      if (sharpe > old_sharpe + sharpe_diff .or. alpha < alpha_min) exit
       alpha = alpha * 0.5_dp
    end do
 
    if (abs(sharpe - old_sharpe) < tol_) exit
    w = w_new
 end do
+print*,"in max_sharpe_long_only, exiting loop, iter, alpha =",iter,alpha ! debug
 end subroutine max_sharpe_long_only
 
 subroutine project_simplex(v, n)
@@ -114,5 +115,22 @@ var = dot_product(w, cw)
 ret = dot_product(w, mu)
 sharpe = ret / sqrt(var)
 end function sharpe_ratio
+
+subroutine sharpe_ratio_grad(w, mu, cov, sharpe, grad)
+! computes the Sharpe ratio and its gradient wrt w
+real(dp), intent(in)  :: w(:)                       ! weights
+real(dp), intent(in)  :: mu(:)                      ! expected returns
+real(dp), intent(in)  :: cov(size(w),size(w))       ! covariance matrix
+real(dp), intent(out) :: sharpe                     ! Sharpe ratio
+real(dp), intent(out) :: grad(size(w))              ! gradient dS/dw
+real(dp) :: ret, var
+real(dp), allocatable :: cw(:)
+! compute ret and var
+cw = matmul(cov, w)
+var = dot_product(w, cw)
+ret = dot_product(w, mu)
+sharpe = ret / sqrt(var)
+grad = mu / sqrt(var) - (ret / var**1.5_dp) * cw
+end subroutine sharpe_ratio_grad
 
 end module portfolio_opt_mod
