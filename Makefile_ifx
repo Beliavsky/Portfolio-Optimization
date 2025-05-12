@@ -1,0 +1,20 @@
+executables = xportfolio_opt_sim_ifx.exe
+FC     = ifx
+FFLAGS = /nologo /Zi /Od /check:all /traceback /fpe-all:0 /warn:all /assume:protect_parens /implicitnone /stand:f23
+obj    = kind.obj portfolio_opt.obj xportfolio_opt_sim.obj
+
+all: $(executables)
+
+# Compile .f90 to .obj
+%.obj: %.f90
+	$(FC) $(FFLAGS) -c $<
+
+xportfolio_opt_sim_ifx.exe: kind.obj portfolio_opt.obj xportfolio_opt_sim.obj
+	$(FC) -o xportfolio_opt_sim_ifx.exe kind.obj portfolio_opt.obj xportfolio_opt_sim.obj $(FFLAGS)
+
+run: $(executables)
+	./xportfolio_opt_sim_ifx.exe
+
+clean:
+	rm -f $(executables) $(obj)
+
