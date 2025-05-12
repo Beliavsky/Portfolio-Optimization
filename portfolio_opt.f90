@@ -5,7 +5,7 @@ private
 public :: max_sharpe_long_only, sort_desc, sharpe_ratio
 
 contains
-!--------------------------------------------------------------------
+
 subroutine max_sharpe_long_only(mu, cov, w, sharpe, n, tol, max_iter)
 ! long-only portfolio that maximizes the ex-ante Sharpe ratio
 integer,  intent(in)  :: n               ! number of assets
@@ -60,7 +60,6 @@ do iter = 1, max_iter_
    if (abs(sharpe - old_sharpe) < tol_) exit
    w = w_new
 end do
-deallocate(g, cw, w_new)
 end subroutine max_sharpe_long_only
 
 subroutine project_simplex(v, n)
@@ -110,12 +109,7 @@ real(dp), intent(in) :: mu(:)        ! expected returns
 real(dp), intent(in) :: cov(size(w),size(w)) ! covariance matrix
 real(dp) :: sharpe, ret, var
 real(dp), allocatable :: cw(:)
-integer :: n
-
-n = size(w)
-allocate(cw(n))
-
-cw = matmul(cov, w)
+cw  = matmul(cov, w)
 var = dot_product(w, cw)
 ret = dot_product(w, mu)
 sharpe = ret / sqrt(var)
