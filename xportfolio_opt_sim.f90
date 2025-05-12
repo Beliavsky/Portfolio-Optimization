@@ -4,15 +4,17 @@ program xportfolio_opt
                                sharpe_ratio, sharpe_ratio_grad
   implicit none
 
-  integer, parameter :: n = 100        ! <-- change n here
+  integer, parameter :: n = 1000       ! <-- change n here
   real(dp)           :: mu(n)          ! simulated expected returns
   real(dp)           :: cov(n,n)       ! simulated covariance matrix
   real(dp)           :: w(n)           ! optimal weights
   real(dp)           :: sharpe         ! optimal Sharpe ratio
+  real(dp)           :: sharpe_max_ran
   real(dp)           :: A(n,n)
   real(dp)           :: grad(n)        ! gradient of Sharpe ratio
   real(dp), parameter :: low = 0.01_dp, high = 0.10_dp
-
+  integer, parameter :: ntry_ran_w = 10**4
+  integer :: i
   ! initialize random-number generator
   call random_seed()
 
@@ -38,5 +40,14 @@ program xportfolio_opt
   call sharpe_ratio_grad(w, mu, cov, sharpe, grad)
   print "(/,a, f8.4)", "Sharpe ratio for equal weights: ", sharpe
   print "(/,a,/,*(f8.4))", "Gradient of Sharpe ratio:", grad
-
+  if (ntry_ran_w > 0) then
+     sharpe_max_ran = -huge(sharpe_max_ran)
+     do i=1,ntry_ran_w
+        call random_number(w)
+        sharpe = sharpe_ratio(w, mu, cov)
+        sharpe_max_ran = max(sharpe, sharpe_max_ran)
+     end do
+     print "(/,'# random sets of weights: ',i0)", ntry_ran_w
+     print "(a, f8.4)", "maximum random Sharpe:", sharpe_max_ran
+  end if
 end program xportfolio_opt
